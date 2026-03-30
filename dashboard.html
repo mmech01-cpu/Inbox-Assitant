@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inbox Zero — Mourad</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #222639;
+      --surface3: #2a2f47;
+      --border: #2e3250;
+      --border2: #3a3f60;
+      --accent: #6366f1;
+      --accent-soft: #6366f115;
+      --accent-mid: #6366f130;
+      --green: #22c55e;
+      --green-soft: #22c55e15;
+      --yellow: #f59e0b;
+      --yellow-soft: #f59e0b15;
+      --red: #ef4444;
+      --red-soft: #ef444415;
+      --blue: #3b82f6;
+      --blue-soft: #3b82f615;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim: #4a5568;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --radius-xs: 5px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* Layout */
+    .layout { display: flex; min-height: 100vh; }
+
+    /* Sidebar */
+    .sidebar {
+      width: 220px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 24px 0;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+    }
+    .sidebar-logo {
+      padding: 0 20px 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
+    .sidebar-logo h1 { font-size: 15px; font-weight: 700; }
+    .sidebar-logo p { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 20px;
+      font-size: 13px;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: 0;
+      transition: all 0.15s;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: var(--accent-soft); color: var(--text); border-right: 2px solid var(--accent); }
+    .nav-item .nav-badge {
+      margin-left: auto;
+      background: var(--accent);
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 10px;
+      min-width: 18px;
+      text-align: center;
+    }
+    .nav-section {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 14px 20px 4px;
+    }
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 16px 20px 0;
+      border-top: 1px solid var(--border);
+    }
+    .status-dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; } 50% { opacity: 0.35; }
+    }
+
+    /* Main content */
+    .main {
+      margin-left: 220px;
+      flex: 1;
+      padding: 32px 36px;
+      max-width: 1000px;
+    }
+
+    /* Page header */
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+    .page-header h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+    .page-header p { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+
+    /* Tabs */
+    .tabs {
+      display: none;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      margin-bottom: 16px;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .card-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Badges */
+    .badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 20px;
+      letter-spacing: 0.2px;
+    }
+    .badge-green { background: var(--green-soft); color: var(--green); }
+    .badge-yellow { background: var(--yellow-soft); color: var(--yellow); }
+    .badge-accent { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-mid); }
+    .badge-red { background: var(--red-soft); color: var(--red); }
+    .badge-blue { background: var(--blue-soft); color: var(--blue); }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s, background 0.15s;
+      text-decoration: none;
+    }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-secondary { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--surface3); color: var(--text); }
+    .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+    .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+    .btn-green { background: var(--green-soft); color: var(--green); border: 1px solid #22c55e30; }
+    .btn-green:hover { background: #22c55e25; }
+    .btn-sm { padding: 5px 12px; font-size: 12px; }
+    .btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+    /* Schedule row */
+    .schedule-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.2fr;
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .schedule-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+    }
+    .schedule-time { font-size: 26px; font-weight: 700; letter-spacing: -1px; }
+    .schedule-time span { font-size: 13px; color: var(--text-muted); font-weight: 400; }
+    .schedule-label { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+    .trigger-block {
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-mid);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+    }
+    .trigger-block .t-label { font-size: 11px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+    .trigger-block p { font-size: 12px; color: var(--text-muted); line-height: 1.5; flex: 1; }
+
+    /* Draft items */
+    .draft-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+    .draft-header {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .draft-header:hover { background: var(--surface2); }
+    .draft-avatar {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-mid);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+    .draft-info { flex: 1; min-width: 0; }
+    .draft-sender { font-size: 13px; font-weight: 600; }
+    .draft-subject { font-size: 12px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .draft-chevron { color: var(--text-dim); transition: transform 0.2s; }
+    .draft-chevron.open { transform: rotate(180deg); }
+    .draft-body { display: none; border-top: 1px solid var(--border); padding: 20px; }
+    .draft-body.open { display: block; }
+    .draft-text-area {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 13px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      line-height: 1.7;
+      padding: 14px;
+      resize: vertical;
+      min-height: 140px;
+      outline: none;
+    }
+    .draft-actions { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .copy-feedback { font-size: 11px; color: var(--green); display: none; }
+    .draft-flags { margin-top: 10px; }
+    .flag-item {
+      font-size: 11px;
+      color: var(--yellow);
+      background: var(--yellow-soft);
+      border: 1px solid #f59e0b20;
+      border-radius: var(--radius-xs);
+      padding: 4px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-right: 6px;
+      margin-bottom: 6px;
+    }
+
+    /* Paste areas */
+    .paste-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .paste-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .paste-card .pc-icon {
+      width: 32px; height: 32px;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 12px;
+      font-size: 16px;
+    }
+    .paste-card .pc-icon.blue { background: var(--blue-soft); }
+    .paste-card .pc-icon.purple { background: var(--accent-soft); }
+    .paste-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .paste-card p { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 14px; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .field-row.single { grid-template-columns: 1fr; }
+    input[type="text"], input[type="email"] {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xs);
+      color: var(--text);
+      font-size: 12px;
+      padding: 7px 10px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input::placeholder { color: var(--text-dim); }
+    input:focus { border-color: var(--accent); }
+    .paste-textarea {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 12.5px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      line-height: 1.6;
+      padding: 12px;
+      resize: vertical;
+      min-height: 160px;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 12px;
+    }
+    .paste-textarea:focus { border-color: var(--accent); }
+    .paste-textarea::placeholder { color: var(--text-dim); }
+    .save-instruction {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+    .save-instruction a { color: var(--accent); text-decoration: none; }
+
+    /* Style notes */
+    .style-textarea {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 13px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      line-height: 1.7;
+      padding: 14px;
+      resize: vertical;
+      min-height: 200px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .style-textarea:focus { border-color: var(--accent); }
+    .style-textarea::placeholder { color: var(--text-dim); }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-dim);
+    }
+    .empty-state .em-icon { font-size: 36px; margin-bottom: 12px; }
+    .empty-state p { font-size: 13px; line-height: 1.6; }
+
+    /* Meta row */
+    .meta-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--surface2);
+      border-radius: var(--radius-sm);
+      margin-bottom: 20px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .meta-row strong { color: var(--text); }
+    .meta-sep { color: var(--border2); }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--surface2);
+      border: 1px solid var(--green);
+      border-radius: var(--radius-sm);
+      padding: 10px 16px;
+      font-size: 12px;
+      color: var(--green);
+      display: none;
+      align-items: center;
+      gap: 8px;
+      z-index: 1000;
+    }
+
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 20px 16px; }
+      .schedule-row, .paste-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <h1>📬 Inbox Zero</h1>
+      <p>mourad.mechach@holded.com</p>
+    </div>
+
+    <div class="nav-section">Overview</div>
+    <button class="nav-item active" onclick="showPage('drafts', this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Drafts &amp; Summary
+      <span class="nav-badge" id="draftCount">—</span>
+    </button>
+
+    <div class="nav-section">Submit</div>
+    <button class="nav-item" onclick="showPage('email', this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      Email Reply
+    </button>
+    <button class="nav-item" onclick="showPage('transcript', this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.07 13.18 19.79 19.79 0 0 1 1 4.59 2 2 0 0 1 2.96 2.41h3a2 2 0 0 1 2 1.72c.12.96.36 1.91.72 2.81a2 2 0 0 1-.45 2.11L7 9.91a16 16 0 0 0 6 6l1.06-1.06a2 2 0 0 1 2.11-.45c.9.36 1.85.6 2.81.72A2 2 0 0 1 21 16.92z"/></svg>
+      Call Transcript
+    </button>
+
+    <div class="nav-section">Settings</div>
+    <button class="nav-item" onclick="showPage('style', this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M4.93 19.07l1.41-1.41M19.07 19.07l-1.41-1.41M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+      Style Notes
+    </button>
+
+    <div class="sidebar-footer">
+      <div class="status-dot"><span class="dot"></span> Running 9am &amp; 3pm</div>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- DRAFTS PAGE -->
+    <div id="page-drafts" class="tab-content active">
+      <div class="page-header">
+        <div>
+          <h2>Drafts &amp; Summary</h2>
+          <p>Claude's suggested replies from the last run — copy and paste directly into Gmail or Slack.</p>
+        </div>
+      </div>
+
+      <!-- Schedule row -->
+      <div class="schedule-row">
+        <div class="schedule-block">
+          <div class="schedule-time">9:00 <span>AM</span></div>
+          <div class="schedule-label">Weekdays · CEST</div>
+          <div style="margin-top:10px"><span class="dot"></span> <span style="font-size:11px;color:var(--text-muted)">Auto-running</span></div>
+        </div>
+        <div class="schedule-block">
+          <div class="schedule-time">3:00 <span>PM</span></div>
+          <div class="schedule-label">Weekdays · CEST</div>
+          <div style="margin-top:10px"><span class="dot"></span> <span style="font-size:11px;color:var(--text-muted)">Auto-running</span></div>
+        </div>
+        <div class="trigger-block">
+          <div class="t-label">▶ Run Now</div>
+          <p>Trigger a full scan immediately — open Cowork → Scheduled → <strong>inbox-zero-on-demand</strong> → Run now.</p>
+        </div>
+      </div>
+
+      <!-- Last run meta -->
+      <div id="lastRunMeta" style="display:none" class="meta-row">
+        <span>Last run: <strong id="lastRunTime">—</strong></span>
+        <span class="meta-sep">·</span>
+        <span>Scanned: <strong id="lastRunScanned">—</strong></span>
+        <span class="meta-sep">·</span>
+        <span>Drafted: <strong id="lastRunDrafted">—</strong></span>
+      </div>
+
+      <!-- Draft list -->
+      <div id="draftList">
+        <div class="empty-state">
+          <div class="em-icon">🕐</div>
+          <p>No drafts yet. The first automated run is today at 3:00 PM,<br>or trigger one now from Cowork → Scheduled.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- EMAIL PASTE PAGE -->
+    <div id="page-email" class="tab-content">
+      <div class="page-header">
+        <div>
+          <h2>Email Reply</h2>
+          <p>Paste an email from a prospect or partner — Claude will draft a reply in your voice.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Sender details</div>
+            <div class="card-sub">So Claude can research context and match the right tone</div>
+          </div>
+        </div>
+        <div class="field-row">
+          <input type="text" id="emailSenderName" placeholder="Sender name (e.g. Víctor González)" />
+          <input type="email" id="emailSenderEmail" placeholder="Sender email (e.g. victor@company.com)" />
+        </div>
+        <div class="field-row single">
+          <input type="text" id="emailSubject" placeholder="Subject line (optional)" />
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Paste the email</div>
+        </div>
+        <textarea class="paste-textarea" id="emailBody" placeholder="Paste the full email body here...
+
+Example:
+Hola Mourad,
+
+Muchas gracias por tu email. Nos interesaría saber más sobre el programa de partners...
+
+Saludos,
+Víctor"></textarea>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="saveEmailFile()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Save to uploads folder
+          </button>
+          <button class="btn btn-ghost" onclick="copyEmailAsText()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy as text
+          </button>
+          <span id="emailCopyFeedback" class="copy-feedback" style="display:none">✓ Copied — paste into Cowork chat</span>
+        </div>
+        <p class="save-instruction" style="margin-top:12px">
+          After saving, either run the next scheduled scan (9am / 3pm) or trigger manually. Claude will pick it up automatically.
+          <br>Alternatively, paste directly into the <strong>Cowork chat</strong> with "process this email reply for me."
+        </p>
+      </div>
+    </div>
+
+    <!-- TRANSCRIPT PASTE PAGE -->
+    <div id="page-transcript" class="tab-content">
+      <div class="page-header">
+        <div>
+          <h2>Call Transcript / Notes</h2>
+          <p>Paste your call notes or transcript — Claude will draft a warm post-call follow-up.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Contact details</div>
+            <div class="card-sub">So Claude knows who to address the follow-up to</div>
+          </div>
+        </div>
+        <div class="field-row">
+          <input type="text" id="callContactName" placeholder="Contact name (e.g. Luis Miguel Prieto)" />
+          <input type="email" id="callContactEmail" placeholder="Contact email" />
+        </div>
+        <div class="field-row">
+          <input type="text" id="callCompany" placeholder="Company (e.g. Terabotics)" />
+          <input type="text" id="callDate" placeholder="Call date (e.g. 30 March 2026)" />
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Paste notes or transcript</div>
+        </div>
+        <textarea class="paste-textarea" id="transcriptBody" style="min-height:200px" placeholder="Paste your call notes or transcript here. Even rough bullet points work.
+
+Example:
+- Call with Luis Miguel from Terabotics, 45 mins
+- They use Sage currently, ~30 employees
+- Main pain: manual invoicing, no integration with their CRM
+- Interested in Holded ERP + partner program
+- He mentioned they have 15 SME clients who ask about accounting software
+- Next step: send him the partner one-pager and schedule a demo
+- He's going to Lisbon next week, follow up after 7 April"></textarea>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="saveTranscriptFile()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Save to uploads folder
+          </button>
+          <button class="btn btn-ghost" onclick="copyTranscriptAsText()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy as text
+          </button>
+          <span id="transcriptCopyFeedback" class="copy-feedback" style="display:none">✓ Copied — paste into Cowork chat</span>
+        </div>
+        <p class="save-instruction" style="margin-top:12px">
+          After saving, Claude will draft the follow-up email on the next run, or you can paste the notes directly into the <strong>Cowork chat</strong> and say "draft a post-call follow-up for this."
+        </p>
+      </div>
+    </div>
+
+    <!-- STYLE NOTES PAGE -->
+    <div id="page-style" class="tab-content">
+      <div class="page-header">
+        <div>
+          <h2>Style Notes</h2>
+          <p>Teach Claude your preferences — read and applied on every run.</p>
+        </div>
+        <span class="badge badge-accent">Auto-applied each run</span>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">style_notes.md</div>
+            <div class="card-sub">Add corrections, approved reply examples, or per-contact preferences below</div>
+          </div>
+        </div>
+        <textarea class="style-textarea" id="styleNotes" placeholder="Write your preferences here. Examples:
+
+[2026-03-30] When replying to existing Holded users who respond to partner outreach, skip re-pitching the product — they already know it. Go straight to: 'do you recommend it to clients?'
+
+[2026-03-30] Víctor González (vicgonsam@icloud.com) — existing Holded user 1+ year, approach as potential referral partner not a cold prospect.
+
+[2026-03-30] For warm post-call emails, always reference something personal/specific from the call in the very first line — never open with a generic 'great to meet you.'
+
+--- APPROVED REPLY EXAMPLES ---
+
+Context: Short reply to a cold prospect who said they're already a user
+Approved reply:
+Hola [Name], perfecto — si ya lleváis más de un año con la plataforma, ya sabéis mejor que nadie el valor que aporta. Te pregunto directo: ¿hay clientes vuestros a los que hayáis recomendado Holded o en los que lo hayáis implementado? Un saludo, Mourad"></textarea>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:14px">
+          <button class="btn btn-primary" onclick="saveStyleNotes()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save notes
+          </button>
+          <span id="styleSavedMsg" style="font-size:11px;color:var(--green);display:none">✓ Saved to style_notes.md — will apply on next run</span>
+        </div>
+        <p class="save-instruction" style="margin-top:12px">
+          These notes are saved to <code style="font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px">style_notes.md</code> in your Inbox Zero Assistant folder. Claude reads this file before every run and adjusts its drafts accordingly.
+        </p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ─── Navigation ────────────────────────────────────────────────
+  function showPage(id, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    document.getElementById('page-' + id).classList.add('active');
+    if (btn) btn.classList.add('active');
+  }
+
+  // ─── Toast ─────────────────────────────────────────────────────
+  function toast(msg, color) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.borderColor = color || 'var(--green)';
+    t.style.color = color || 'var(--green)';
+    t.style.display = 'flex';
+    setTimeout(() => t.style.display = 'none', 3000);
+  }
+
+  // ─── Load drafts.json ──────────────────────────────────────────
+  function loadDrafts() {
+    fetch('drafts.json?' + Date.now())
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) return;
+        renderDrafts(data);
+      })
+      .catch(() => {});
+  }
+
+  function renderDrafts(data) {
+    // Update meta
+    if (data.lastRun) {
+      document.getElementById('lastRunMeta').style.display = 'flex';
+      const d = new Date(data.lastRun);
+      document.getElementById('lastRunTime').textContent = d.toLocaleString('es-ES', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+      document.getElementById('lastRunScanned').textContent = data.scanned || '—';
+      document.getElementById('lastRunDrafted').textContent = (data.drafts || []).length;
+      document.getElementById('draftCount').textContent = (data.drafts || []).length;
+    }
+
+    const container = document.getElementById('draftList');
+    const drafts = data.drafts || [];
+
+    if (!drafts.length) {
+      container.innerHTML = '<div class="empty-state"><div class="em-icon">✅</div><p>Nothing to action — inbox is clear.</p></div>';
+      return;
+    }
+
+    container.innerHTML = '';
+
+    // Category order
+    const order = ['URGENT','ACTION REQUIRED','SCHEDULING REQUEST','QUESTION','FOLLOW-UP','FYI / INFORMATIONAL'];
+    const sorted = [...drafts].sort((a, b) => (order.indexOf(a.category) || 99) - (order.indexOf(b.category) || 99));
+
+    sorted.forEach((d, i) => {
+      const initials = (d.sender || '?').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+      const catBadge = getCategoryBadge(d.category);
+      const sourceBadge = d.source === 'Gmail'
+        ? '<span class="badge" style="background:#ea430515;color:#ea4335;font-size:10px">Gmail</span>'
+        : '<span class="badge" style="background:#4a154b20;color:#e01e5a;font-size:10px">Slack</span>';
+
+      const flags = (d.flags || []).map(f =>
+        `<span class="flag-item">⚠️ ${f}</span>`
+      ).join('');
+
+      const gmailBtn = d.gmailLink
+        ? `<a href="${d.gmailLink}" target="_blank" class="btn btn-sm btn-secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Open in Gmail</a>`
+        : '';
+
+      container.innerHTML += `
+        <div class="draft-item">
+          <div class="draft-header" onclick="toggleDraft(${i})">
+            <div class="draft-avatar">${initials}</div>
+            <div class="draft-info">
+              <div class="draft-sender">${esc(d.sender || 'Unknown')} ${sourceBadge} ${catBadge}</div>
+              <div class="draft-subject">${esc(d.subject || d.topic || '')}</div>
+            </div>
+            <svg class="draft-chevron" id="chev-${i}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="draft-body" id="body-${i}">
+            ${d.context ? `<p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.6">📋 <em>${esc(d.context)}</em></p>` : ''}
+            <textarea class="draft-text-area" id="draftText-${i}" spellcheck="true">${esc(d.draftText || '')}</textarea>
+            <div class="draft-actions">
+              <button class="btn btn-sm btn-green" onclick="copyDraft(${i})">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Copy reply
+              </button>
+              ${gmailBtn}
+              <span class="copy-feedback" id="copyfb-${i}">✓ Copied to clipboard!</span>
+            </div>
+            ${flags ? `<div class="draft-flags">${flags}</div>` : ''}
+          </div>
+        </div>`;
+    });
+
+    // FYI section
+    const fyi = data.fyi || [];
+    if (fyi.length) {
+      container.innerHTML += `
+        <div style="margin-top:24px;margin-bottom:10px;font-size:11px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.8px">FYI — No Action Needed</div>`;
+      fyi.forEach(f => {
+        container.innerHTML += `
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;font-size:12px;color:var(--text-muted)">
+            <span style="color:var(--text-dim)">–</span>
+            <span><strong style="color:var(--text)">${esc(f.sender)}</strong> &nbsp;${esc(f.note || f.subject || '')}
+            </span>
+          </div>`;
+      });
+    }
+  }
+
+  function getCategoryBadge(cat) {
+    const map = {
+      'URGENT': 'badge-red',
+      'ACTION REQUIRED': 'badge-yellow',
+      'SCHEDULING REQUEST': 'badge-blue',
+      'QUESTION': 'badge-accent',
+      'FOLLOW-UP': 'badge-green',
+      'FYI / INFORMATIONAL': '',
+    };
+    const cls = map[cat] || 'badge-accent';
+    return `<span class="badge ${cls}" style="font-size:10px">${cat}</span>`;
+  }
+
+  function toggleDraft(i) {
+    const body = document.getElementById('body-' + i);
+    const chev = document.getElementById('chev-' + i);
+    body.classList.toggle('open');
+    chev.classList.toggle('open');
+  }
+
+  function copyDraft(i) {
+    const text = document.getElementById('draftText-' + i).value;
+    navigator.clipboard.writeText(text).then(() => {
+      const fb = document.getElementById('copyfb-' + i);
+      fb.style.display = 'inline';
+      toast('✓ Draft copied to clipboard!');
+      setTimeout(() => fb.style.display = 'none', 3000);
+    });
+  }
+
+  function esc(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ─── Email file save ───────────────────────────────────────────
+  function saveEmailFile() {
+    const name = document.getElementById('emailSenderName').value.trim();
+    const email = document.getElementById('emailSenderEmail').value.trim();
+    const subject = document.getElementById('emailSubject').value.trim();
+    const body = document.getElementById('emailBody').value.trim();
+    if (!body) { toast('Paste an email body first', 'var(--yellow)'); return; }
+
+    const content = [
+      name ? `FROM: ${name}${email ? ' <' + email + '>' : ''}` : '',
+      subject ? `SUBJECT: ${subject}` : '',
+      '',
+      body
+    ].filter(l => l !== null).join('\n');
+
+    const slug = (name || 'email').toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+    const filename = `reply_from_${slug}_${Date.now()}.txt`;
+
+    downloadFile(filename, content);
+    toast('✓ File ready — move to uploads/email_replies/ and run scan');
+  }
+
+  function copyEmailAsText() {
+    const name = document.getElementById('emailSenderName').value.trim();
+    const email = document.getElementById('emailSenderEmail').value.trim();
+    const body = document.getElementById('emailBody').value.trim();
+    const text = `EMAIL FROM: ${name} ${email}\n\n${body}`;
+    navigator.clipboard.writeText(text).then(() => {
+      document.getElementById('emailCopyFeedback').style.display = 'inline';
+      setTimeout(() => document.getElementById('emailCopyFeedback').style.display = 'none', 3000);
+      toast('✓ Copied — paste into Cowork and say "draft a reply"');
+    });
+  }
+
+  // ─── Transcript file save ──────────────────────────────────────
+  function saveTranscriptFile() {
+    const name = document.getElementById('callContactName').value.trim();
+    const email = document.getElementById('callContactEmail').value.trim();
+    const company = document.getElementById('callCompany').value.trim();
+    const date = document.getElementById('callDate').value.trim();
+    const body = document.getElementById('transcriptBody').value.trim();
+    if (!body) { toast('Paste your notes first', 'var(--yellow)'); return; }
+
+    const content = [
+      `CONTACT: ${name}${email ? ' <' + email + '>' : ''}`,
+      company ? `COMPANY: ${company}` : '',
+      date ? `CALL DATE: ${date}` : '',
+      '',
+      '--- NOTES / TRANSCRIPT ---',
+      '',
+      body
+    ].filter(l => l !== null).join('\n');
+
+    const slug = (name || 'call').toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+    const filename = `call_${slug}_${Date.now()}.txt`;
+
+    downloadFile(filename, content);
+    toast('✓ File ready — move to uploads/call_transcripts/ and run scan');
+  }
+
+  function copyTranscriptAsText() {
+    const name = document.getElementById('callContactName').value.trim();
+    const email = document.getElementById('callContactEmail').value.trim();
+    const company = document.getElementById('callCompany').value.trim();
+    const body = document.getElementById('transcriptBody').value.trim();
+    const text = `CALL WITH: ${name} (${company}) ${email}\n\n${body}`;
+    navigator.clipboard.writeText(text).then(() => {
+      document.getElementById('transcriptCopyFeedback').style.display = 'inline';
+      setTimeout(() => document.getElementById('transcriptCopyFeedback').style.display = 'none', 3000);
+      toast('✓ Copied — paste into Cowork and say "draft a post-call follow-up"');
+    });
+  }
+
+  // ─── Style notes save ──────────────────────────────────────────
+  function saveStyleNotes() {
+    const notes = document.getElementById('styleNotes').value;
+    // Save to localStorage as a quick cache
+    localStorage.setItem('inboxzero_style_notes', notes);
+    // Also download the file for the user to replace style_notes.md
+    downloadFile('style_notes.md', notes);
+    document.getElementById('styleSavedMsg').style.display = 'inline';
+    setTimeout(() => document.getElementById('styleSavedMsg').style.display = 'none', 4000);
+    toast('✓ style_notes.md downloaded — replace the file in your folder');
+  }
+
+  // ─── File download helper ──────────────────────────────────────
+  function downloadFile(filename, content) {
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ─── Load style notes from localStorage ───────────────────────
+  const savedNotes = localStorage.getItem('inboxzero_style_notes');
+  if (savedNotes) {
+    document.getElementById('styleNotes').value = savedNotes;
+  }
+
+  // ─── Init ──────────────────────────────────────────────────────
+  loadDrafts();
+  setInterval(loadDrafts, 60000); // refresh every minute
+</script>
+</body>
+</html>
